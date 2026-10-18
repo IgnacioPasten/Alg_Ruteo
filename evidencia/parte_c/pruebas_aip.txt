@@ -1,0 +1,12 @@
+ Container udp-ruteo-fase2-db-1  Running
+test_a3_extraction_packet_includes_the_full_parser_report (tests.test_a3_aip.A3Aip.test_a3_extraction_packet_includes_the_full_parser_report) ... ok
+test_graph_arcs_intersecting_a3_are_unchanged_from_v1 (tests.test_a3_aip.A3Aip.test_graph_arcs_intersecting_a3_are_unchanged_from_v1) ... ok
+test_real_pdf_selects_p29_p50_with_original_circle_parameters (tests.test_a3_aip.A3Aip.test_real_pdf_selects_p29_p50_with_original_circle_parameters) ... ok
+test_reordered_polygon_hull_far_from_aoi_is_reported (tests.test_a3_aip.A3Aip.test_reordered_polygon_hull_far_from_aoi_is_reported) ... ok
+test_reordered_polygon_hull_near_aoi_is_rejected (tests.test_a3_aip.A3Aip.test_reordered_polygon_hull_near_aoi_is_rejected) ... ok
+test_report_accounts_for_all_zones_vertical_limits_and_exceptions (tests.test_a3_aip.A3Aip.test_report_accounts_for_all_zones_vertical_limits_and_exceptions) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 12.585s
+
+OK
