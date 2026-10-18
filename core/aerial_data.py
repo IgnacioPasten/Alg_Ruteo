@@ -2,14 +2,12 @@
 import hashlib
 import json
 import math
-import re
 from datetime import datetime,timedelta,timezone
 from functools import lru_cache
 from uuid import UUID,NAMESPACE_URL,uuid5
 
 import rasterio
-from pyproj import Transformer,Geod
-from pypdf import PdfReader
+from pyproj import Transformer
 from shapely import make_valid
 from shapely.geometry import shape,Point,LineString,Polygon,MultiPolygon,mapping
 from shapely.ops import transform,unary_union
@@ -54,32 +52,6 @@ def load_sources(config):
             data[key]=features
         else:data[key]=path(entry)
     return manifest,data
-
-
-def airspace(path):
-    """Parser acotado al catálogo S6 del informe; falla si cambia su estructura."""
-    records=[];geod=Geod(ellps='WGS84')
-    reader=PdfReader(path)
-    for code in ['SC-P29','SC-P30','SC-P50']:
-        found=[]
-        for page_number,page in enumerate(reader.pages,1):
-            text=page.extract_text() or ''
-            if code not in text:continue
-            block=re.split(r'SC-[PRD]\d+',text.split(code,1)[1])[0]
-            coord=re.search(r'(\d{2})\s+(\d{2})\s+(\d{2}(?:[.,]\d+)?)\s*S\s*/?\s*(\d{2})\s+(\d{2})\s+(\d{2}(?:[.,]\d+)?)\s*W',block)
-            radius=re.search(r'(?:radio\s+|de\s+)(\d+(?:[.,]\d+)?)\s*(NM|m)\b',block,re.I)
-            if not coord or not radius:raise ValueError('AIP cambió; revisar parser '+code)
-            a,b,c,d,e,f=map(lambda s:float(s.replace(',','.')),coord.groups())
-            lat=-(a+b/60+c/3600);lon=-(d+e/60+f/3600)
-            metres=float(radius[1].replace(',','.'))*(1852 if radius[2].upper()=='NM' else 1)
-            coords=[geod.fwd(lon,lat,bearing,metres)[:2] for bearing in range(360)];coords.append(coords[0])
-            found.append(dict(provider_id=code,code=code,geometry=mapping(Polygon(coords)),
-                radius_m=metres,center=[lon,lat],lower_limit='GND/MSL (ver original)',
-                upper_limit='Conservado en original_record; exclusión 2D',conditions=block.strip(),
-                document_page=str(page_number),original_record=block.strip()))
-        if len(found)!=1:raise ValueError('AIP registro ausente/ambiguo '+code)
-        records.extend(found)
-    return records
 
 
 def assemble(config):
@@ -157,7 +129,8 @@ def assemble(config):
     # Conservar todos los focos del AOI en el original de siete días; aplicar ventana por consulta.
     from Amenazas.a2_firms import transformar as transformar_a2
     records['A2']=transformar_a2(raw['S5'].read_text(encoding='utf-8-sig'),area,profile['thermal_buffer_m'])
-    records['A3']=airspace(raw['S6'])
+    from Amenazas.a3_aip import transformar as transformar_a3
+    records['A3']=transformar_a3(raw['S6'])
     for rows in records.values():rows.sort(key=lambda r:str(r.get('provider_id',r.get('node_id',r.get('valid_at','')))))
     context=dict(records=records,reference_time=clock.isoformat(),weather_fetched_at=manifest['sources']['S4']['fetched_at_utc'],profile=profile,repairs=repairs,raster=raster_info,
                  catalog_scope='S6: SC-P29, SC-P30, SC-P50 from reference report; not complete flight clearance',clearance_verified=False)
