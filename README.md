@@ -78,12 +78,17 @@ El perfil académico conserva 10 m/s, 25 min, reserva 20 % y observación 60 s:
 presupuesto utilizable 1.200 s. La selección propuesta compara tiempo y exposición,
 respeta bloqueos y comprueba regreso. No modela energía vertical, sensores,
 obstáculos individuales, navegación reactiva ni telemetría real.
+El costo de cada arco es tiempo en segundos (`longitud / velocidad sobre el
+suelo`); la exposición histórica A4 es un criterio secundario, no se suma como
+peso al tiempo. Los parámetros y el ejemplo numérico están en
+[costo y defaults](docs/DATOS_AEREOS.md#costo-criterio-de-alternativas-y-defaults).
 
 ## Documentación y evidencia
 
 - [Datos, API, parámetros y diccionario](docs/DATOS_AEREOS.md).
 - [Originales S1-S7](datos/entrada/aereo/README.md).
 - [Informe y verificaciones](evidencia/aereo_2026-10-17/INFORME.md).
+- [Evidencia de amenazas, cargas y pesos para láminas 11–15](evidencia/parte_c/README.md).
 - [SQL inicial](BD/crear_bd.sql) y [migración aérea](BD/migraciones/003_red_aerea.sql).
 - [Diagrama de la ampliación](BD/diagrama_aereo.svg).
 

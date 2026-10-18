@@ -1,0 +1,13 @@
+tabla|dataset_key|filas|registros|estado
+routing.airspace_zones|A3|2||
+routing.datasets|A1|1|9|valid
+routing.datasets|A2|1|0|empty
+routing.datasets|A3|1|2|valid
+routing.datasets|A4|1|17|valid
+routing.hazards|A1|9||
+routing.hazards|A3|2||
+routing.hazards|A4|17||
+routing.historical_risk|A4|17||
+routing.thermal_events|A2|0||
+routing.weather_hazards|A1|9||
+(11 rows)

@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
+from unittest.mock import patch
 from uuid import uuid4
 
 from psycopg import errors
@@ -130,6 +131,29 @@ class AerialIntegration(unittest.TestCase):
             for route in [p['outbound'],p['return_path']]:
                 self.assertTrue(self.area.covers(LineString(route['coordinates'])))
         self.assertEqual(len(signatures),len(options))
+
+    def test_firms_window_and_aip_zones_are_hard_2d_exclusions(self):
+        origin_m=Point(FWD(*self.request['origin']))
+        obstacle=mapping(transform(INV,origin_m.buffer(100)))
+        model=copy.copy(self.model);records=dict(model['records'])
+        records['A3']=[];records['A2']=[dict(geometry=obstacle,
+            acquired_at=(iso(self.clock)-timedelta(hours=24)).isoformat())]
+        model['records']=records
+        with patch('core.aerial_routing.data',return_value=(model,self.area,self.nodes,self.edges)):
+            at_limit=calculate(self.conn,self.rid,self.request)
+        self.assertEqual(at_limit['reason'],'endpoint_blocked')
+
+        records['A2']=[dict(geometry=obstacle,
+            acquired_at=(iso(self.clock)-timedelta(hours=24,seconds=1)).isoformat())]
+        with patch('core.aerial_routing.data',return_value=(model,self.area,self.nodes,self.edges)):
+            expired=calculate(self.conn,self.rid,self.request)
+        self.assertEqual(expired['status'],'ready')
+
+        records['A2']=[]
+        records['A3']=[dict(geometry=obstacle,lower_limit='SFC',upper_limit='FL 100')]
+        with patch('core.aerial_routing.data',return_value=(model,self.area,self.nodes,self.edges)):
+            aip_blocked=calculate(self.conn,self.rid,self.request)
+        self.assertEqual(aip_blocked['reason'],'endpoint_blocked')
 
     def test_blockage_removes_whole_segments_and_reference_stays_unchanged(self):
         p=LineString(self.result['alternatives'][0]['outbound']['coordinates']).interpolate(.5,normalized=True)

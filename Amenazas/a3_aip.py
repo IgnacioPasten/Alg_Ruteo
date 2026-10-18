@@ -6,7 +6,7 @@ from math import atan2, isfinite
 
 from pyproj import Geod, Transformer
 from pypdf import PdfReader
-from shapely.geometry import Point, Polygon, mapping
+from shapely.geometry import MultiPoint, Point, Polygon, mapping
 from shapely.ops import transform
 
 _ENTRY_RE = re.compile(r"^\s*SC\s*-\s*([PRD])\s*(\d+)\s+FIR\b", re.I)
@@ -282,7 +282,15 @@ def transformar(path, area, aip_margin_m):
         elif len(coords) >= 3:
             geometry = Polygon(coords)
             geometry_reordered = False
+            convex_hull_distance_m = None
             if not geometry.is_valid:
+                hull_m = transform(_TO_METRIC, MultiPoint(coords).convex_hull)
+                convex_hull_distance_m = hull_m.distance(area_m)
+                if hull_m.intersects(selection_area):
+                    raise ValueError(
+                        f"Polígono AIP inválido {code}: convex hull intersecta AOI "
+                        f"ampliado ({convex_hull_distance_m:.1f} m del AOI)"
+                    )
                 centroid_x = sum(point[0] for point in coords) / len(coords)
                 centroid_y = sum(point[1] for point in coords) / len(coords)
                 ordered = sorted(
@@ -327,6 +335,11 @@ def transformar(path, area, aip_margin_m):
             radius_m=radius_m,
             vertices=len(coords) if geometry_type == "polygon" else None,
             geometry_reordered=geometry_reordered if geometry_type == "polygon" else False,
+            convex_hull_distance_m=(
+                round(convex_hull_distance_m, 1)
+                if geometry_type == "polygon" and convex_hull_distance_m is not None
+                else None
+            ),
         ))
 
     if not counts or any(counts[kind] == 0 for kind in "PRD"):

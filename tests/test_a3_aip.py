@@ -4,8 +4,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from pypdf import PdfWriter
 from pyproj import Transformer
-from shapely.geometry import LineString, shape
+from shapely.geometry import LineString, Polygon, shape
 from shapely.ops import transform
 
 from Amenazas.a3_aip import transformar
@@ -53,6 +54,62 @@ class A3Aip(unittest.TestCase):
         exceptions = {row['code'] for row in self.report['explicit_exceptions']}
         self.assertTrue({'SC-P51', 'SC-R45', 'SC-R46', 'SC-R47', 'SC-R48'} <= exceptions)
 
+    def test_reordered_polygon_hull_near_aoi_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'SC-P99.*convex hull'):
+            self._transform_synthetic_polygon(near=True)
+
+    def test_reordered_polygon_hull_far_from_aoi_is_reported(self):
+        records, report = self._transform_synthetic_polygon(near=False)
+        entry = next(row for row in report['records'] if row['code'] == 'SC-P99')
+        self.assertTrue(entry['geometry_reordered'])
+        self.assertGreater(entry['convex_hull_distance_m'], 300)
+        self.assertEqual(entry['status'], 'fuera_del_margen')
+        self.assertTrue(all(row['code'] != 'SC-P99' for row in records))
+
+    def _transform_synthetic_polygon(self, near):
+        area = Polygon([
+            (-71.01, -33.01), (-70.99, -33.01),
+            (-70.99, -32.99), (-71.01, -32.99),
+        ])
+        offset = 0 if near else 0.2
+
+        def coordinate_text(longitude, latitude):
+            lat_total = round(abs(latitude) * 3600)
+            lat_deg, lat_remainder = divmod(lat_total, 3600)
+            lat_min, lat_sec = divmod(lat_remainder, 60)
+            lon_total = round(abs(longitude) * 3600)
+            lon_deg, lon_remainder = divmod(lon_total, 3600)
+            lon_min, lon_sec = divmod(lon_remainder, 60)
+            return (
+                f'{lat_deg:02d} {lat_min:02d} {lat_sec:02d} S '
+                f'{lon_deg:03d} {lon_min:02d} {lon_sec:02d} W'
+            )
+
+        vertices = [
+            (-71.005 + offset, -33.005 + offset),
+            (-70.995 + offset, -32.995 + offset),
+            (-71.005 + offset, -32.995 + offset),
+            (-70.995 + offset, -33.005 + offset),
+        ]
+        polygon_block = '\n'.join(coordinate_text(*point) for point in vertices)
+        circle_point = coordinate_text(-71.0, -33.0)
+        entries = [
+            ('SC-P99', 1, polygon_block, []),
+            ('SC-R1', 1, f'circle radius 10 M {circle_point}', []),
+            ('SC-D1', 1, f'circle radius 10 M {circle_point}', []),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            pdf = Path(directory) / 'synthetic.pdf'
+            writer = PdfWriter()
+            writer.add_blank_page(width=72, height=72)
+            with pdf.open('wb') as stream:
+                writer.write(stream)
+            with (
+                patch('Amenazas.a3_aip._entry_blocks', return_value=iter(entries)),
+                patch('Amenazas.a3_aip._vertical_limits', return_value=('SFC', 'FL 100')),
+            ):
+                return transformar(pdf, area, 300)
+
     def test_graph_arcs_intersecting_a3_are_unchanged_from_v1(self):
         to_metric = Transformer.from_crs(4326, 32719, always_xy=True).transform
         old_records = json.loads((ROOT / 'evidencia/a3_v1.json').read_text(encoding='utf-8'))
@@ -71,6 +128,11 @@ class A3Aip(unittest.TestCase):
 
         self.assertEqual(intersecting_arcs(old_zones), intersecting_arcs(new_zones))
         self.assertEqual(self.context['aip_parser_report']['selected_codes'], ['SC-P29', 'SC-P50'])
+        r68 = next(
+            row for row in self.report['records'] if row['code'] == 'SC-R68')
+        self.assertTrue(r68['geometry_reordered'])
+        self.assertEqual(r68['status'], 'fuera_del_margen')
+        self.assertGreater(r68['convex_hull_distance_m'], self.profile['aip_margin_m'])
 
     def test_a3_extraction_packet_includes_the_full_parser_report(self):
         with tempfile.TemporaryDirectory() as directory:
