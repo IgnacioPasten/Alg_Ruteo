@@ -89,7 +89,7 @@ def assemble(config):
     profile=json.loads((ROOT/config['aerial_profile']).read_text(encoding='utf-8'))
     records={key:[] for key in KEYS}
     repairs={}
-    for key,source in [('M2','S2'),('A4','S7')]:
+    for key,source in [('M2','S2')]:
         repaired=0
         for f in raw[source]:
             geom=shape(f['geometry']);bad=not geom.is_valid
@@ -104,6 +104,8 @@ def assemble(config):
                 item.update(ordinal_class=ordinal,class_label=p['recurrencia'],period_start=2020,period_end=2024)
             records[key].append(item)
         repairs[key]=repaired
+    from Amenazas.a4_historial import transformar as transformar_a4
+    records['A4'],repairs['A4']=transformar_a4(raw['S7'],area,manifest['sources']['S7']['id_field'],polygonal)
     for f in raw['S1']:
         if area.covers(shape(f['geometry'])):
             p=f['properties'];records['M1'].append(dict(provider_id=str(p['objectid_1']),name=p['nombre'],commune=p.get('comuna'),address=p.get('direccion'),geometry=f['geometry']))
