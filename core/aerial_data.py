@@ -1,7 +1,5 @@
 """S1-S7 reales; corredores académicos derivados, nunca vuelos observados."""
-import csv
 import hashlib
-import io
 import json
 import math
 import re
@@ -154,20 +152,11 @@ def assemble(config):
         records['M4'].append(row)
     acquisition=iso(manifest['fetched_at_utc']);clock=acquisition.replace(minute=0,second=0,microsecond=0)
     if not any(iso(r['valid_at'])==clock for r in records['M4']):clock=iso(records['M4'][0]['valid_at'])
-    for row in records['M4']:
-        missing=any(row[k] is None for k in ['wind_speed_ms','wind_gust_ms','temperature_c','wind_direction_deg'])
-        bad=not missing and (max(row['wind_speed_ms'],row['wind_gust_ms'])>=profile['wind_limit_ms'] or not profile['temperature_min_c']<=row['temperature_c']<=profile['temperature_max_c'])
-        if missing or bad:records['A1'].append(dict(provider_id=row['valid_at'],geometry=mapping(area),valid_at=row['valid_at'],state='unknown' if missing else 'active',reason='missing_weather' if missing else 'weather_outside_academic_profile'))
+    from Amenazas.a1_meteorologia import transformar as transformar_a1
+    records['A1']=transformar_a1(records['M4'],area,profile)
     # Conservar todos los focos del AOI en el original de siete días; aplicar ventana por consulta.
-    for i,row in enumerate(csv.DictReader(io.StringIO(raw['S5'].read_text(encoding='utf-8-sig')))):
-        point=Point(float(row['longitude']),float(row['latitude']))
-        if area.covers(point):
-            hh=row['acq_time'].zfill(4);date=row['acq_date']+'T'+hh[:2]+':'+hh[2:]+':00+00:00'
-            if row['confidence'] not in ['l','n','h']:raise ValueError('Confianza FIRMS desconocida')
-            if row['confidence']=='l':continue
-            records['A2'].append(dict(provider_id=f'{date}:{row["latitude"]}:{row["longitude"]}',point=mapping(point),
-                geometry=mapping(transform(INV,transform(FWD,point).buffer(profile['thermal_buffer_m']))),acquired_at=date,confidence=row['confidence'],
-                fire_radiative_power_mw=float(row['frp']),buffer_m=profile['thermal_buffer_m']))
+    from Amenazas.a2_firms import transformar as transformar_a2
+    records['A2']=transformar_a2(raw['S5'].read_text(encoding='utf-8-sig'),area,profile['thermal_buffer_m'])
     records['A3']=airspace(raw['S6'])
     for rows in records.values():rows.sort(key=lambda r:str(r.get('provider_id',r.get('node_id',r.get('valid_at','')))))
     context=dict(records=records,reference_time=clock.isoformat(),weather_fetched_at=manifest['sources']['S4']['fetched_at_utc'],profile=profile,repairs=repairs,raster=raster_info,
