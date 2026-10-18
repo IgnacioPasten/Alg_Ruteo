@@ -1,0 +1,19 @@
+{
+  "A1": {
+    "registros": 9,
+    "sha256": "3f1cf7bc33ec2ee598dcbef02dabaff40e0cc0762fed2257b61a6afd7fae140d"
+  },
+  "A2": {
+    "registros": 0,
+    "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "A3": {
+    "registros": 2,
+    "sha256": "92b6873b921b1c5161b75aedb6bba8e4bcd8b29aac48de6d018aca82f09d017a"
+  },
+  "A4": {
+    "registros": 17,
+    "sha256": "d693ef4f2fa1c00ee21e2590d5f0f04c38ec2d84c6c2da5de5b3e7f42ffd1e2c"
+  },
+  "context_sha256": "4cdccf3fea2423e0b9b2009fbb9cbd94570f1b53df7b3e4ed4f7e33beb442673"
+}

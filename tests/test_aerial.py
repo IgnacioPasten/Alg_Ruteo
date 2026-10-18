@@ -79,7 +79,7 @@ class AerialIntegration(unittest.TestCase):
         self.assertEqual(self.report['topology']['spatial']['outside_edges'],0)
         self.assertEqual(self.report['topology']['spatial']['outside_nodes'],0)
         self.assertGreater(self.report['counts']['M2'],100)
-        self.assertEqual(self.report['counts']['A3'],3)
+        self.assertEqual(self.report['counts']['A3'],2)
 
     def test_laguna_verde_real_base_uses_its_exact_source_point(self):
         self.assertAlmostEqual(self.request['origin'][0],-71.6572392109999,places=12)

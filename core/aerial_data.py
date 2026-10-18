@@ -130,10 +130,12 @@ def assemble(config):
     from Amenazas.a2_firms import transformar as transformar_a2
     records['A2']=transformar_a2(raw['S5'].read_text(encoding='utf-8-sig'),area,profile['thermal_buffer_m'])
     from Amenazas.a3_aip import transformar as transformar_a3
-    records['A3']=transformar_a3(raw['S6'])
+    records['A3'],aip_parser_report=transformar_a3(raw['S6'],area,profile['aip_margin_m'])
     for rows in records.values():rows.sort(key=lambda r:str(r.get('provider_id',r.get('node_id',r.get('valid_at','')))))
     context=dict(records=records,reference_time=clock.isoformat(),weather_fetched_at=manifest['sources']['S4']['fetched_at_utc'],profile=profile,repairs=repairs,raster=raster_info,
-                 catalog_scope='S6: SC-P29, SC-P30, SC-P50 from reference report; not complete flight clearance',clearance_verified=False)
+                 aip_parser_report=aip_parser_report,
+                 catalog_scope='S6 ENR 5.1: todas las SC-P/SC-R/SC-D inventariadas; geometrías soportadas seleccionadas con margen AOI configurable; ver aip_parser_report para excepciones. No es autorización de vuelo.',
+                 clearance_verified=False)
     lineage=dict(builder=profile['builder'],configuration_sha256=hashlib.sha256(canonical(config)).hexdigest(),
         aoi=dict(file=config['aoi_geojson'],sha256=sha256(ROOT/config['aoi_geojson']),geometry=json.loads(json.dumps(mapping(area))),predicate='covers'),
         sources=manifest['sources'],manifest_sha256=sha256(ROOT/config['aerial_raw_directory']/'manifest.json'),

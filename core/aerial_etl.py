@@ -18,6 +18,8 @@ def extract(key,rid,output):
     packet=dict(schema_version='aerial-dataset-1',run_id=str(rid),dataset_id=str(uuid5(UUID(str(rid)),key)),dataset_key=key,source_id=KEYS[key],
         observed_at=doc['observed_at'],extracted_at=doc['extracted_at'],records=context['records'][key],
         lineage=dict(source=doc['lineage']['sources'][KEYS[key]],aoi=doc['lineage']['aoi'],context_sha256=doc['lineage']['context_sha256']))
+    if key=='A3':
+        packet['parser_report']=context['aip_parser_report']
     write_json(output,packet)
 
 

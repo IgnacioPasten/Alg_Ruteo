@@ -70,7 +70,9 @@ S1-S7 del informe están adquiridas: instalaciones, vegetación CONAF 2019, DSM
 Copernicus, pronóstico Open-Meteo, FIRMS, AIP y recurrencia histórica. Los nueve
 ETL tienen diccionarios y cargas tipadas. FIRMS devuelve cero detecciones aceptadas
 en este AOI; se registra como colección vacía, no como ausencia de incendio.
-AIP usa el catálogo acotado de tres zonas del informe. No es autorización de vuelo.
+AIP ENR 5.1 inventaría zonas SC-P, SC-R y SC-D; selecciona geometrías soportadas
+que alcanzan el AOI ampliado 300 m. El reporte A3 detalla formas no soportadas y
+excepciones. No es autorización de vuelo.
 
 El perfil académico conserva 10 m/s, 25 min, reserva 20 % y observación 60 s:
 presupuesto utilizable 1.200 s. La selección propuesta compara tiempo y exposición,

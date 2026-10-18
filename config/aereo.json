@@ -13,6 +13,7 @@
   "weather_max_age_minutes": 90,
   "thermal_buffer_m": 250,
   "thermal_window_hours": 24,
+  "aip_margin_m": 300,
   "alternatives": 3,
   "detour_factor": 1.2,
   "clearance_verified": false,
